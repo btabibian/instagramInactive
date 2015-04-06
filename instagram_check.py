@@ -12,21 +12,29 @@ parser.add_argument('--CLIENT_ID', type = str, default = None,
 parser.add_argument('--CALL_BACK', type = str, default = None,
                            help='Instagram Client call back address')
 parser.add_argument('--output', type = str, required = True, help='output file for list of users')
+parser.add_argument('--verbose', type = bool, default = False, help = 'print detailed information')
 
-def compute_statistics(api):
+def compute_statistics(api, verbose = False):
   properties = dict()
-  for use in api.user_follows()[0]:
+  for use in api.user_followed_by()[0]:
     relationship = api.user_relationship(user_id = use.id)
-    if not relationship.target_user_is_private or relationship.outgoing_status == 'follows':
+    if verbose == True:
+      print("Checking %s" % (use.full_name))
+    if (not relationship.target_user_is_private) or (relationship.outgoing_status == 'follows'):
+
       media = api.user_recent_media(user_id = use.id)
       latest_post = compute_latest_post(media[0])
       average_post = compute_average_post(media[0])
+      if verbose == True:
+        print("Checking %s, last_post %s " % (use.full_name,str(latest_post)))
       yield {'id': use.id,'name' : use.full_name,
               'latest_post' : compute_latest_post(media[0]),
               'average_post' : compute_average_post(media[0]),
               'relationship' : relationship.outgoing_status if relationship.outgoing_status == 'follows' else "public"
                }
     else:
+      if verbose == True:
+        print('unknown user %s' % use.full_name)
       yield {'id': use.id,'name' : use.full_name,
               'latest_post' : None,
               'average_post' : None,
@@ -76,7 +84,7 @@ if __name__ == '__main__':
   	print("There is soemthing wrong with the link")
 
   api = InstagramAPI(access_token = token)
-  inactive = find_inactive(compute_statistics(api),last_post = datetime.timedelta(days = 100))
+  inactive = find_inactive(compute_statistics(api,args.verbose),last_post = datetime.timedelta(days = args.nDays))
   import codecs
   with codecs.open(args.output,'w','utf-8') as fi:
     for inact in inactive:
