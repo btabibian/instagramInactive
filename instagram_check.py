@@ -34,7 +34,8 @@ def compute_statistics(api, verbose = False):
         yield {'id': use.id,'name' : use.full_name,
                 'latest_post' : compute_latest_post(media[0]),
                 'average_post' : compute_average_post(media[0]),
-                'relationship' : relationship.outgoing_status if relationship.outgoing_status == 'follows' else "public"
+                'relationship' : relationship.outgoing_status if relationship.outgoing_status == 'follows' else "public",
+                'username': use.username
                  }
       else:
         if verbose == True:
@@ -42,7 +43,8 @@ def compute_statistics(api, verbose = False):
         yield {'id': use.id,'name' : use.full_name,
                 'latest_post' : None,
                 'average_post' : None,
-                'relationship' : "private"
+                'relationship' : "private",
+                'username': use.username
                  }
 
 
@@ -96,8 +98,5 @@ if __name__ == '__main__':
     for inact in inactive:
       print(count)
       count += 1
-      fi.write(inact[0]['name']+","+str(inact[0]['id'])+","+inact[0]['relationship']+"\n")
+      fi.write(inact[0]['name']+","+str(inact[0]['id'])+","+inact[0]['relationship']+ ","+inact[0]['username']+"\n")
   print 'Done'
-
-
-
