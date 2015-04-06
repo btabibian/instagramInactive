@@ -16,30 +16,35 @@ parser.add_argument('--verbose', type = bool, default = False, help = 'print det
 
 def compute_statistics(api, verbose = False):
   properties = dict()
-  for use in api.user_followed_by()[0]:
-    relationship = api.user_relationship(user_id = use.id)
-    if verbose == True:
-      print("Checking %s" % (use.full_name))
-    if (not relationship.target_user_is_private) or (relationship.outgoing_status == 'follows'):
+  count = 0
+  for use_ , _ in api.user_followed_by(as_generator=True, max_pages = api.user().counts['follows']/20+1,count = 20):
 
-      media = api.user_recent_media(user_id = use.id)
-      latest_post = compute_latest_post(media[0])
-      average_post = compute_average_post(media[0])
+    for use in use_:
+      count+=1
+      relationship = api.user_relationship(user_id = use.id)
       if verbose == True:
-        print("Checking %s, last_post %s " % (use.full_name,str(latest_post)))
-      yield {'id': use.id,'name' : use.full_name,
-              'latest_post' : compute_latest_post(media[0]),
-              'average_post' : compute_average_post(media[0]),
-              'relationship' : relationship.outgoing_status if relationship.outgoing_status == 'follows' else "public"
-               }
-    else:
-      if verbose == True:
-        print('unknown user %s' % use.full_name)
-      yield {'id': use.id,'name' : use.full_name,
-              'latest_post' : None,
-              'average_post' : None,
-              'relationship' : "private"
-               }
+        print(count)
+        print("Checking %s" % (use.full_name))
+      if (not relationship.target_user_is_private) or (relationship.outgoing_status == 'follows'):
+        media = api.user_recent_media(user_id = use.id)
+        latest_post = compute_latest_post(media[0])
+        average_post = compute_average_post(media[0])
+        if verbose == True:
+          print("Checking %s, last_post %s " % (use.full_name,str(latest_post)))
+        yield {'id': use.id,'name' : use.full_name,
+                'latest_post' : compute_latest_post(media[0]),
+                'average_post' : compute_average_post(media[0]),
+                'relationship' : relationship.outgoing_status if relationship.outgoing_status == 'follows' else "public"
+                 }
+      else:
+        if verbose == True:
+          print('unknown user %s' % use.full_name)
+        yield {'id': use.id,'name' : use.full_name,
+                'latest_post' : None,
+                'average_post' : None,
+                'relationship' : "private"
+                 }
+
 
 def find_inactive(posts,last_post = None,average_post = None):
   #print last_post
@@ -86,8 +91,11 @@ if __name__ == '__main__':
   api = InstagramAPI(access_token = token)
   inactive = find_inactive(compute_statistics(api,args.verbose),last_post = datetime.timedelta(days = args.nDays))
   import codecs
+  count = 0
   with codecs.open(args.output,'w','utf-8') as fi:
     for inact in inactive:
+      print(count)
+      count += 1
       fi.write(inact[0]['name']+","+str(inact[0]['id'])+","+inact[0]['relationship']+"\n")
   print 'Done'
 
